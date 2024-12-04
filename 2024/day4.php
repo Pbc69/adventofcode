@@ -4,35 +4,33 @@
 $xmaxCount = new XmaxCount("XMAS");
 $xmaxCount->setData(testInput());
 $xmaxCount->printTable();
-echo $xmaxCount->count();
-echo " of must be 18\n";
+echo "Test count: {$xmaxCount->count()}. Must be 18<br>";
+$xmaxCount->printMatch();
 
-
-// $xmaxCount = new XmaxCount("XMAS");
-// $xmaxCount->input = puzzleInput();
-// echo $xmaxCount->count();
-// echo "<br>";
-
-
+// Puzzle
+$xmaxCount = new XmaxCount("XMAS");
+$xmaxCount->setData(puzzleInput());
+echo "Puzzle count: {$xmaxCount->count()}<br>";
 
 
 class XmaxCount
 {
-    public array $result = [];
+    public array $hits = [];
     private int $wordLen;
+    private int $xyAdd;
 
     private array $lines;
-    private int $counter;
+    private int $counter = 0;
     private int $top = 0;
     private int $right = 0;
     private int $bottom = 0;
     private int $left = 0;
 
-
-
     public function __construct(private string $word)
     {
         $this->wordLen = strlen($word);
+        // must be minus 1 because we start from 0 (0 + 3 = 4 chars)
+        $this->xyAdd = $this->wordLen - 1;
     }
 
     public function setData(string $input): self {
@@ -47,41 +45,49 @@ class XmaxCount
         $this->left = 0;
 
         // init Hit Table
-        for ($y = 0; $y < count($this->lines); $y++) {
-            $this->result[$y] = array_fill(0, strlen($this->lines[$y]), 0);
-        }
+        for ($y = 0; $y < count($this->lines); $y++)
+            $this->hits[$y] = array_fill(0, strlen($this->lines[$y]), 0);
 
+        $this->counter = 0;
         return $this;
     }
 
     public function printTable() {
         $lines = $this->lines;
         for ($y = $this->top; $y <= $this->bottom; $y++) {
-            $line = $lines[$y];
             for ($x = $this->left; $x <= $this->right; $x++) {
-                $char = $line[$x];
-                if ($this->word[0] === $char) {
-                    $line[$x] = strtoupper($char);
-                } else {
-                    $line[$x] = strtolower($char);
+                if ($this->word[0] !== $lines[$y][$x]) {
+                    $lines[$y][$x] = strtolower($lines[$y][$x]);
                 }
             }
-            echo "$line\n";
+            echo "$lines[$y]\n";
+        }
+    }
+    public function printHits() {
+        for ($y = $this->top; $y <= $this->bottom; $y++) {
+            echo implode("", $this->hits[$y])."\n";
+        }
+    }
+    public function printMatch() {
+        $lines = $this->lines;
+        for ($y = $this->top; $y <= $this->bottom; $y++) {
+            for ($x = $this->left; $x <= $this->right; $x++) {
+                if ($this->hits[$y][$x] === 0) {
+                    $lines[$y][$x] = ".";
+                }
+            }
+            echo "$lines[$y]\n";
         }
     }
 
     function count(): int
     {
-        $this->counter = 0;
-
-
         // Test Rect
         for ($y = $this->top; $y <= $this->bottom; $y++) {
             $line = $this->lines[$y];
-            $cur = $this->counter;
 
             for ($x = $this->left; $x <= $this->right; $x++) {
-                if ($line[$x] == $this->word[0]) {
+                if ($line[$x] === $this->word[0]) {
                     $this->testDown($y, $x);
                     $this->testUp($y, $x);
 
@@ -95,118 +101,131 @@ class XmaxCount
                     $this->testLeftDown($y, $x);
                 }
             }
-            echo " -> ". ($this->counter - $cur);
-            echo " ========= \n";
         }
         return $this->counter;
     }
 
 
-    function testRight(int $y, int $x)
+    function testRight(int $y, int $x): ?bool
     {
-        if (!$this->inRect($y, $x + $this->wordLen))
-            return;
+        if (!$this->inRect($y, $x + $this->xyAdd))
+            return null;
 
-        for ($i = 0; $i < $this->wordLen; $i++) {
-            if ($this->lines[$y][$x + $i] != $this->word[$i]) {
-                return;
-            }
-        }
-        for ($i = 0; $i < $this->wordLen; $i++) {
-            $this->result[$y][$x + $i] ++
-
-        $this->counter++;
-    }
-    function testLeft(int $y, int $x)
-    {
-        if (!$this->inRect($y, $x - $this->wordLen))
-            return;
-
-        for ($i = 0; $i < $this->wordLen; $i++)
-            if ($this->lines[$y][$x - $i] != $this->word[$i])
+        for ($i = 1; $i < $this->wordLen; $i++)
+            if ($this->lines[$y][$x + $i] !== $this->word[$i])
                 return false;
 
+        for ($i = 0; $i < $this->wordLen; $i++)
+            $this->hits[$y][$x + $i] ++;
         $this->counter++;
+        return true;
     }
-
-    function testDown(int $y, int $x)
+    function testLeft(int $y, int $x): ?bool
     {
-        if (!$this->inRect($y + $this->wordLen, $x))
-            return;
+        if (!$this->inRect($y, $x - $this->xyAdd))
+            return null;
+
+        for ($i = 1; $i < $this->wordLen; $i++)
+            if ($this->lines[$y][$x - $i] !== $this->word[$i])
+                return false;
 
         for ($i = 0; $i < $this->wordLen; $i++)
-            if ($this->lines[$y + $i][$x] != $this->word[$i])
-                return;
-
+            $this->hits[$y][$x - $i] ++;
         $this->counter++;
+        return true;
     }
 
-    function testUp(int $y, int $x)
+    function testDown(int $y, int $x): ?bool
     {
-        if (!$this->inRect($y - $this->wordLen, $x))
-            return;
+        if (!$this->inRect($y + $this->xyAdd, $x))
+            return null;
 
-        for ($i = 0; $i < $this->wordLen; $i++) {
-            if ($this->lines[$y - $i][$x] != $this->word[$i]) {
-                return;
-            }
-        }
+        for ($i = 1; $i < $this->wordLen; $i++)
+            if ($this->lines[$y + $i][$x] !== $this->word[$i])
+                return false;
+
+        for ($i = 0; $i < $this->wordLen; $i++)
+            $this->hits[$y + $i][$x] ++;
         $this->counter++;
+        return true;
     }
 
-    function testRightDown(int $y, int $x)
+    function testUp(int $y, int $x): ?bool
     {
-        if (!$this->inRect($y + $this->wordLen, $x + $this->wordLen))
-            return;
+        if (!$this->inRect($y - $this->xyAdd, $x))
+            return null;
 
-        for ($i = 0; $i < $this->wordLen; $i++) {
-            if ($this->lines[$y + $i][$x + $i] != $this->word[$i]) {
-                return;
-            }
-        }
+        for ($i = 1; $i < $this->wordLen; $i++)
+            if ($this->lines[$y - $i][$x] !== $this->word[$i])
+                return false;
+
+        for ($i = 0; $i < $this->wordLen; $i++)
+            $this->hits[$y - $i][$x] ++;
         $this->counter++;
+        return true;
     }
 
-    function testLeftUp(int $y, int $x)
+    function testRightDown(int $y, int $x): ?bool
     {
-        if (!$this->inRect($y - $this->wordLen, $x - $this->wordLen))
-            return;
+        if (!$this->inRect($y + $this->xyAdd, $x + $this->xyAdd))
+            return null;
 
-        for ($i = 0; $i < $this->wordLen; $i++) {
-            if ($this->lines[$y - $i][$x - $i] != $this->word[$i]) {
-                return;
-            }
-        }
+        for ($i = 1; $i < $this->wordLen; $i++)
+            if ($this->lines[$y + $i][$x + $i] !== $this->word[$i])
+                return false;
+
+        for ($i = 0; $i < $this->wordLen; $i++)
+            $this->hits[$y + $i][$x + $i] ++;
         $this->counter++;
+        return true;
     }
 
-    function testRightUp(int $y, int $x)
+    function testLeftUp(int $y, int $x): ?bool
     {
-        if (!$this->inRect($y - $this->wordLen, $x + $this->wordLen))
-            return;
+        if (!$this->inRect($y - $this->xyAdd, $x - $this->xyAdd))
+            return null;
 
-        for ($i = 0; $i < $this->wordLen; $i++) {
-            if ($this->lines[$y - $i][$x + $i] != $this->word[$i]) {
-                return;
-            }
-        }
+        for ($i = 1; $i < $this->wordLen; $i++)
+            if ($this->lines[$y - $i][$x - $i] !== $this->word[$i])
+                return false;
+
+        for ($i = 0; $i < $this->wordLen; $i++)
+            $this->hits[$y - $i][$x - $i] ++;
         $this->counter++;
+        return true;
     }
 
-    function testLeftDown(int $y, int $x)
+    function testRightUp(int $y, int $x): ?bool
     {
-        if (!$this->inRect($y + $this->wordLen, $x - $this->wordLen))
-            return;
+        if (!$this->inRect($y - $this->xyAdd, $x + $this->xyAdd))
+            return null;
 
-        for ($i = 0; $i < $this->wordLen; $i++) {
-            if ($this->lines[$y + $i][$x - $i] != $this->word[$i]) {
-                return;
-            }
-        }
+        for ($i = 1; $i < $this->wordLen; $i++)
+            if ($this->lines[$y - $i][$x + $i] !== $this->word[$i])
+                return false;
+
+        for ($i = 0; $i < $this->wordLen; $i++)
+            $this->hits[$y - $i][$x + $i] ++;
         $this->counter++;
+        return true;
     }
 
-    private function inRect(int $y, int $x): bool
+    function testLeftDown(int $y, int $x): ?bool
+    {
+        if (!$this->inRect($y + $this->xyAdd, $x - $this->xyAdd))
+            return null;
+
+        for ($i = 1; $i < $this->wordLen; $i++)
+            if ($this->lines[$y + $i][$x - $i] !== $this->word[$i])
+                return false;
+
+        for ($i = 0; $i < $this->wordLen; $i++)
+            $this->hits[$y + $i][$x - $i] ++;
+        $this->counter++;
+        return true;
+    }
+
+    public function inRect(int $y, int $x): bool
     {
         return $y >= $this->top && $y <= $this->bottom && $x >= $this->left && $x <= $this->right;
     }
