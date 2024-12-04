@@ -7,9 +7,6 @@ $xmaxCount->printTable();
 echo "Test count: {$xmaxCount->count()}. Must be 9<br>";
 $xmaxCount->printMatch();
 
-var_dump($xmaxCount->testLeftDown(1,2));
-
-
 // Puzzle - Part a
 $xmaxCount = new XmaxCountPart2("MAS");
 $xmaxCount->setData(puzzleInput());
@@ -96,11 +93,9 @@ class XmaxCountPart2
                     if (!$this->inRect($y + $this->from, $x + $this->from)) continue;
                     if (!$this->inRect($y + $this->to, $x + $this->to)) continue;
 
-                    if (!$this->testRightDown($y, $x)) continue;
-                    / if (!$this->testLeftUp($y, $x)) continue;
 
-  //                  if (!$this->testRightUp($y, $x)) continue;
-                    // if (!$this->testLeftDown($y, $x)) continue;
+                    if (!($this->testRightDown($y, $x) || $this->testLeftUp($y, $x))) continue;
+                    if (!($this->testRightUp($y, $x) || $this->testLeftDown($y, $x))) continue;
 
                     // hit
 
