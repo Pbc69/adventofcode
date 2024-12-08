@@ -36,7 +36,7 @@ while (true) {
         $next = $actions[$direction]($x, $y);
         $char = $table[$next[1]][$next[0]] ?? null;
         if (!$char)
-            break; // going to ove outside
+            break; // going to move outside
         if ($char !== "#")
             break;
         // rotate
@@ -62,3 +62,47 @@ foreach($table as $row) {
     $sum += count(array_filter($row, fn($x) => $x === "X"));
 }
 echo "Sum: $sum\n"; // 4752
+
+
+
+// Part 2
+foreach($table as $row) {
+}
+
+
+
+function run(array $pos, array $table,) {
+    global $actions, $directions, $directionIndex, $table, $direction;
+
+    // Do the work
+    [$x, $y] = $pos;
+    while (true) {
+
+        // find next position
+        while(true) {
+            $next = $actions[$direction]($x, $y);
+            $char = $table[$next[1]][$next[0]] ?? null;
+            if (!$char)
+                break; // going to move outside
+            if ($char !== "#")
+                break;
+            // rotate
+            $direction = $directions[$directionIndex++ % 4];
+        }
+
+        // move
+        $table[$y][$x] = "X";
+        [$x, $y] = $next;
+
+        // check if we are done
+        if ($x < 0 || $y < 0 || $x >= count($table[0]) || $y >= count($table)) {
+            break;
+        }
+
+        // We expect that the guard will be able to find the exit
+        // else it will be an infinite loop
+    }
+
+}
+
+
