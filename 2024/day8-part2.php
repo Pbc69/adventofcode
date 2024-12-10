@@ -1,8 +1,8 @@
 <?php
 
-// Part 1
+// Part 2
 $input = file_get_contents('day8.txt');
-//$input  = testInput();
+//$input = testInput();
 $lines = array_map("trim", explode("\n", $input));
 
 $antennas = [];
@@ -27,16 +27,27 @@ foreach($antennas as $freq => $locations) {
 
     for($i = 0; $i < $max; $i++) {
         [$x,$y] = $locations[$i];
+        if ($antiNodes[$y][$x] !== "#") {
+            $antiNodes[$y][$x] = "#";
+            $unique++;
+        }
 
         for($j = $i+1; $j < $max; $j++) {
             [$x2,$y2] = $locations[$j];
 
             $dx = $x2 - $x; // right increasing
             $dy = $y2 - $y; // down increasing
-            $px = $x - $dx;
-            $py = $y - $dy;
 
-            if (isset($table[$py][$px])) {
+            // as long as in table
+            $px = $x;
+            $py = $y;
+            while(true) {
+                $px -= $dx;
+                $py -= $dy;
+
+                if (!isset($table[$py][$px]))
+                    break;
+
                 if ($antiNodes[$py][$px] !== "#") {
                     $antiNodes[$py][$px] = "#";
                     $unique++;
@@ -45,11 +56,16 @@ foreach($antennas as $freq => $locations) {
                     $table[$py][$px] = "#";
             }
 
-            // reverse
-            $px = $x2 + $dx;
-            $py = $y2 + $dy;
+            // as long as in table
+            $px = $x2;
+            $py = $y2;
+            while(true) {
+                $px += $dx;
+                $py += $dy;
 
-            if (isset($table[$py][$px])) {
+                if (!isset($table[$py][$px]))
+                    break;
+
                 if ($antiNodes[$py][$px] !== "#") {
                     $antiNodes[$py][$px] = "#";
                     $unique++;
@@ -60,7 +76,7 @@ foreach($antennas as $freq => $locations) {
         }
     }
 }
-echo "Unique: $unique\n"; // 313
+echo "Unique: $unique\n"; // 1064
 //printTable($table);
 
 
@@ -87,18 +103,19 @@ function testInput(): string
 ............";
 }
 
+// unique = 34
 function testResult(): string
 {
-    return "......#....#
-...#....0...
-....#0....#.
-..#....0....
+    return "##....#....#
+.#.#....0...
+..#.#0....#.
+..##...0....
 ....0....#..
-.#....A.....
-...#........
-#......#....
-........A...
-.........A..
-..........#.
-..........#.";
+.#...#A....#
+...#..#.....
+#....#.#....
+..#.....A...
+....#....A..
+.#........#.
+...#......##";
 }
