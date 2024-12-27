@@ -1,7 +1,7 @@
 <?php
 
 # reuse Part 1
-
+$time = microtime(true);
 $actions = [
     "^" => fn($x,$y) => [$x, $y - 1],
     ">" => fn($x,$y) => [$x + 1, $y],
@@ -47,6 +47,7 @@ foreach($table as $y => $row) {
     }
 }
 echo "Stucks: $stucks\n"; // 1719
+echo "Duration: ".(microtime(true) - $time)."\n";
 // Bad performance, but the easies way i think
 // better would be to not start at first position (snake), but i guess there is a way smarter version
 
