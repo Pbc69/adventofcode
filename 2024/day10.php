@@ -22,6 +22,7 @@ foreach ($matrix as $y => $row) {
 $score = [];
 $trails = 0;
 $paths = [];
+$totalScore = 0;
 
 echo "Start\n";
 $trails = [];
