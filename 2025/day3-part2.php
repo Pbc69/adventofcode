@@ -4,8 +4,8 @@ $input = file_get_contents('day3.txt');
 $list = array_filter(explode("\n", $input));
 
 $sum = 0;
-foreach ($list as $row) {
-    $joltage = find($row);
+foreach ($list as $numbers) {
+    $joltage = find($numbers);
     $sum += $joltage;
 }
 echo "done $sum\n"; // live: 172664333119298, test: 3121910778619
