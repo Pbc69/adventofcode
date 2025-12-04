@@ -1,0 +1,87 @@
+<?php
+
+$input = file_get_contents('day4.txt');
+$list = array_filter(explode("\n", $input));
+$map = [];
+foreach ($list as $line) {
+    $map[] = str_split($line);
+}
+$output = $map;
+$rolls = 0;
+
+while (true) {
+    $removed = 0;
+    foreach ($map as $y => $row) {
+        foreach ($row as $x => $val) {
+            if ($val == "@") {
+                $can = check($map, $y, $x);
+                if ($can) {
+                    $output[$y][$x] = "x";
+                    $rolls++;
+                    $removed++;
+                }
+            }
+        }
+    }
+    if (!$removed) {
+        break;
+    }
+
+    echo "Remove $removed rolls of paper:\n";
+    printMap($output);
+
+    foreach ($output as $y => $row) {
+        foreach ($row as $x => $val) {
+            if ($val == "x") {
+                $output[$y][$x] = ".";
+            }
+        }
+    }
+    $map = $output;
+}
+
+printMap($output);
+echo "Rolls: $rolls\n";
+
+function printMap($map)
+{
+    foreach ($map as $row) {
+        echo implode("", $row) . "\n";
+    }
+    echo "\n";
+}
+
+
+
+function check($map, $y, $x)
+{
+    $height = count($map);
+    $width = count($map[0]);
+
+    $directions = [
+        [0, -1], // up
+        [1, 0],  // right
+        [0, 1],  // down
+        [-1, 0], // left
+        [-1, -1], // left up
+        [1, -1],  // right up
+        [1, 1],   // right down
+        [-1, 1],  // left down
+    ];
+    $hits = 0;
+
+    foreach ($directions as [$dx, $dy]) {
+        $nx = $x + $dx;
+        $ny = $y + $dy;
+
+        if ($nx >= 0 && $nx < $width && $ny >= 0 && $ny < $height) {
+            if ($map[$ny][$nx] == "@") {
+                $hits++;
+                if ($hits == 4) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
