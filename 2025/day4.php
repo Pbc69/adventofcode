@@ -2,10 +2,7 @@
 
 $input = file_get_contents('day4.txt');
 $list = array_filter(explode("\n", $input));
-$map = [];
-foreach ($list as $line) {
-    $map[] = str_split($line);
-}
+$map = array_map("str_split", $list);
 $output = $map;
 $rolls = 0;
 
