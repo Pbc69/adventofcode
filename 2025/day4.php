@@ -1,6 +1,6 @@
 <?php
 
-$input = file_get_contents('day4.txt');
+$input = file_get_contents('day4.txt'); // better $list = file('day4.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 $list = array_filter(explode("\n", $input));
 $map = array_map("str_split", $list);
 $output = $map;
