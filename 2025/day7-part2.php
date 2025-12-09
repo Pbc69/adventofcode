@@ -52,10 +52,10 @@ for ($y = 1; $y < count($map); $y++) {
 }
 
 //_print($map);
-_print($ctr, $ctr);
+_printXyz($ctr, $ctr);
 
 
-function _print($map, $ctr = null)
+function _printXyz($map, $ctr = null)
 {
     foreach ($map as $y => $row) {
         printf("%02d   ", $y);
