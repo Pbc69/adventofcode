@@ -1,53 +1,58 @@
 <?php
 
 
-
 function _run()
 {
     $file = file('day8.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    $list = array_map(fn($s) => new Vector3D(...explode(",", $s)), $file);
+    $list = array_map(fn($s) => new JunctionBox(...explode(",", $s)), $file);
     $total = count($list);
     echo "Total points: $total\n";
 
-
     $distances = _buildDistances($list);
-    _printDistances($distances, 10);
-    // $shortest = _shortestPath($distances);
-    // echo "\nShortest path:\n";
-    // echo "From: {$shortest['from']} To: {$shortest['to']} Distance: {$shortest['dist']}\n";
+    //_printDistances($distances, 50, true);
 
+    $cons = [];
+    foreach ($distances as $item) {
+        /** @var JunctionBox */
+        $from = $item['from'];
+        /** @var JunctionBox */
+        $to   = $item['to'];
+        echo "From: {$from} To: {$to} Distance: {$item['dist']}\n";
 
-    for ($i = 0; $i < $total; $i++) {
-        $distances = _buildDistances($list);
-
-        $shortest = _shortestPath($distances, true);
-        if ($shortest === null) {
-            echo "\nNo more unconnected paths found.\n";
-            break;
+        if (!$from->connectTo($to)) {
+            continue;
         }
-        /** @var Vector3D */
-        $from = $shortest['from'];
-        /** @var Vector3D */
-        $to   = $shortest['to'];
 
-        $from->connectTo($to);
+        echo "  Connected:\n";
+        echo "    Distance: {$item['dist']}\n";
+        echo "    circuit: {$from->circuit}, cons: {$from->count}\n";
 
-        echo "\nShortest unconnected path:\n";
-        echo "From: {$from} To: {$shortest['to']} Distance: {$shortest['dist']}, circle: {$from->circle}, cons: {$from->connectionCount}\n";
-        _printDistances($distances, 2);
+        $cons[$from->circuit] ??= [];
+        $cons[$from->circuit][$from->__toString()] = $from;
+        $cons[$from->circuit][$to->__toString()] = $to;
+
+        // if (count($cons) >= 10) {
+        //     break;
+        // }
     }
 
-    // sort by connection count
-    usort($list, function (Vector3D $a, Vector3D $b) {
-        return $b->connectionCount <=> $a->connectionCount;
-    });
+    $res = [];
+    echo "\n\ncircuit summary: " . count($cons) . "\n";
+    foreach ($cons as $circuit => $nodes) {
+        echo "\nCircuit $circuit has " . count($nodes) . " unique nodes:\n";
+        foreach ($nodes as $n) {
+            echo "  $n\n";
+        }
+        $res[$circuit] = count($nodes);
+    }
+    rsort($res);
 
-    $mul = $list[0]->connectionCount * $list[1]->connectionCount * $list[2]->connectionCount;
-    echo "\nTop 3 connection counts multiplied: {$list[0]->connectionCount} * {$list[1]->connectionCount} * {$list[2]->connectionCount} = $mul\n";
+    $mul = $res[0] * $res[1] * $res[2];
+    echo "\nTop 3 connection counts multiplied: {$res[0]} * {$res[1]} * {$res[2]} = $mul\n";
 }
 
 /**
- * @param array<Vector3D> $list
+ * @param array<JunctionBox> $list
  * @return array
  */
 function _buildDistances(array $list): array
@@ -70,66 +75,70 @@ function _buildDistances(array $list): array
             ];
         }
     }
+    usort($distances, function ($a, $b) {
+        return $a['dist'] <=> $b['dist'];
+    });
     return $distances;
 }
 
-function _shortestPath(array $distances, bool $noCon): ?array
+
+
+function _printDistances(array $distances, int $num = 99999, bool $unconnectedOnly = false): void
 {
-    if ($noCon) {
-        $filtered = [];
-        foreach ($distances as $d) {
+    usort($distances, function ($a, $b) {
+        return $a['dist'] <=> $b['dist'];
+    });
+    $j = 0;
+    foreach ($distances as $i => $d) {
+        if ($unconnectedOnly) {
             if (!empty($d['from']->isConnectedTo) && !empty($d['to']->isConnectedTo)) {
                 continue;
             }
-            $filtered[] = $d;
         }
-        $distances = $filtered;
-    }
-    usort($distances, function ($a, $b) {
-        return $a['dist'] <=> $b['dist'];
-    });
-    return $distances[0] ?? null;
-}
-
-function _printDistances(array $distances, int $num = 99999)
-{
-    usort($distances, function ($a, $b) {
-        return $a['dist'] <=> $b['dist'];
-    });
-    foreach ($distances as $i => $d) {
         echo "  $i: From ({$d['from']}) To ({$d['to']}) distance: {$d['dist']}\n";
 
-        if ($i >= $num - 1) {
+        if ($j >= $num - 1) {
             break;
         }
+        $j++;
     }
 }
 
-class Vector3D
+class JunctionBox
 {
-    static int $circleCounter = 0;
+    private static int $circuitGen = 0;
+
     public array $isConnectedTo = [];
-    public int $connectionCount = 0;
-    public int $circle;
+    public int $count = 1;
+    public ?int $circuit = null;
 
     public function __construct(
         public float $x,
         public float $y,
         public float $z
-    ) {
-        static::$circleCounter++;
-        $this->circle = static::$circleCounter;
-    }
+    ) {}
 
-    public function connectTo(self $other): void
+    public function connectTo(self $other): bool
     {
+        if ($this->circuit && $other->circuit) {
+            // already connected
+            return false;
+        }
+
+        $c = $this->circuit;
+        $c ??= $other->circuit;
+        if ($c === null) {
+            static::$circuitGen++;
+            $c = static::$circuitGen;
+        }
+        $this->circuit = $other->circuit = $c;
+
         $this->isConnectedTo[] = $other;
         $other->isConnectedTo[] = $this;
 
-        $this->connectionCount++;
-        $other->connectionCount++;
-
-        $other->circle = $this->circle;
+        $other->count++;
+        $this->count++;
+        return true;
     }
 
     function distanceTo(self $other): float
@@ -148,3 +157,23 @@ class Vector3D
 }
 
 _run();
+
+// function _shortestPath(array $distances, bool $noCon): ?array
+// {
+//     if ($noCon) {
+//         $filtered = [];
+//         foreach ($distances as $d) {
+//             if (!empty($d['from']->isConnectedTo) && !empty($d['to']->isConnectedTo)) {
+//                 continue;
+//             }
+//             $filtered[] = $d;
+//         }
+//         $distances = $filtered;
+//     }
+//     usort($distances, function ($a, $b) {
+//         return $a['dist'] <=> $b['dist'];
+//     });
+//     return $distances[0] ?? null;
+// }
+
+
